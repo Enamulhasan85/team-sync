@@ -37,9 +37,6 @@ namespace Template.Infrastructure
             // Caching configuration
             services.AddCacheConfiguration(configuration);
 
-            // Logging configuration
-            services.AddLoggingConfiguration(configuration);
-
             return services;
         }
     }

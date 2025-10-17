@@ -1,4 +1,4 @@
-namespace Template.Application.Common.Services;
+namespace Template.Application.Common.Interfaces;
 
 public interface INotificationService
 {

@@ -1,5 +1,4 @@
 using Template.Application.Common.Interfaces;
-using Template.Application.Common.Services;
 using Template.Application.Common.Settings;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
