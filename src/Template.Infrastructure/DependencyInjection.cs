@@ -23,10 +23,7 @@ namespace Template.Infrastructure
             services.AddDatabaseConfiguration(configuration);
 
             // Identity configuration
-            services.AddIdentityConfiguration();
-
-            // Repository configuration
-            services.AddRepositoryConfiguration();
+            services.AddIdentityConfiguration(configuration);
 
             // Infrastructure services configuration
             services.AddInfrastructureServicesConfiguration();

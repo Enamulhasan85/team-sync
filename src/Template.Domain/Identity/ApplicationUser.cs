@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using AspNetCore.Identity.MongoDbCore.Models;
+using MongoDB.Bson;
+using MongoDbGenericRepository.Attributes;
 
 namespace Template.Domain.Identity;
 
-public class ApplicationUser : IdentityUser
+[CollectionName("users")]
+public class ApplicationUser : MongoIdentityUser<ObjectId>
 {
     public string? FullName { get; set; }
     public DateTime? LastLoginAt { get; set; }

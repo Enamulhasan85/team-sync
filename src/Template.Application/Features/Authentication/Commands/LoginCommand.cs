@@ -89,7 +89,7 @@ public class LoginHandler : ICommandHandler<LoginCommand, Result<LoginResponseDt
             await _userManager.UpdateAsync(user);
 
             var userRoles = await _userManager.GetRolesAsync(user);
-            var token = await _tokenService.GenerateTokenAsync(user.Id, user.Email!, userRoles, command.RememberMe);
+            var token = await _tokenService.GenerateTokenAsync(user.Id.ToString(), user.Email!, userRoles, command.RememberMe);
             
             // Calculate expiration based on RememberMe flag and JWT settings
             var expiresInMinutes = command.RememberMe ? _jwtSettings.RememberMeExpiryMinutes : _jwtSettings.ExpiryMinutes;
@@ -105,7 +105,7 @@ public class LoginHandler : ICommandHandler<LoginCommand, Result<LoginResponseDt
                 RefreshToken = await _tokenService.GenerateRefreshTokenAsync(),
                 User = new UserInfoDto
                 {
-                    Id = user.Id,
+                    Id = user.Id.ToString(),
                     Email = user.Email ?? string.Empty,
                     FullName = user.FullName ?? string.Empty,
                     EmailConfirmed = user.EmailConfirmed,

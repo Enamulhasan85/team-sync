@@ -110,7 +110,7 @@ namespace Template.Infrastructure.Services
         // Legacy method for backward compatibility
         public async Task<string> GenerateJwtTokenAsync(ApplicationUser user)
         {
-            return await GenerateTokenAsync(user.Id, user.Email ?? "", new List<string>());
+            return await GenerateTokenAsync(user.Id.ToString(), user.Email ?? "", new List<string>());
         }
     }
 }

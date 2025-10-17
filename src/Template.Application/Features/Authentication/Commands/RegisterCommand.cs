@@ -61,7 +61,7 @@ public class RegisterHandler : ICommandHandler<RegisterCommand, Result<RegisterR
 
             var response = new RegisterResponseDto
             {
-                UserId = user.Id,
+                UserId = user.Id.ToString(),
                 Email = user.Email!,
                 FullName = user.FullName!,
                 RequiresEmailConfirmation = false // Set based on your configuration

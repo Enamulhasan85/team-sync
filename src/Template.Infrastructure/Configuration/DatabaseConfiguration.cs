@@ -1,7 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Template.Infrastructure.Data.Contexts;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
+using Template.Application.Common.Settings;
 
 namespace Template.Infrastructure.Configuration
 {
@@ -14,17 +15,20 @@ namespace Template.Infrastructure.Configuration
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            // User/Identity DB
-            services.AddDbContext<IdentityDbContext>(options =>
-                options.UseSqlServer(
-                    configuration.GetConnectionString("IdentityConnection"),
-                    b => b.MigrationsAssembly(typeof(IdentityDbContext).Assembly.FullName)));
+            services.Configure<MongoDbSettings>(configuration.GetSection("MongoDbSettings"));
 
-            // AppDbContext for domain entities
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(
-                    configuration.GetConnectionString("DefaultConnection"),
-                    b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
+            services.AddSingleton<IMongoClient>(serviceProvider =>
+            {
+                var settings = serviceProvider.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+                return new MongoClient(settings.ConnectionString);
+            });
+
+            services.AddScoped(sp =>
+            {
+                var client = sp.GetRequiredService<IMongoClient>();
+                var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+                return client.GetDatabase(settings.DatabaseName);
+            });
 
             return services;
         }

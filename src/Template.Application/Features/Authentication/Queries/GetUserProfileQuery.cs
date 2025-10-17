@@ -40,7 +40,7 @@ public class GetUserProfileHandler : IQueryHandler<GetUserProfileQuery, Result<U
             var userRoles = await _userManager.GetRolesAsync(user);
             var response = new UserProfileResponseDto
             {
-                Id = user.Id,
+                Id = user.Id.ToString(),
                 Email = user.Email ?? string.Empty,
                 FullName = user.FullName ?? string.Empty,
                 EmailConfirmed = user.EmailConfirmed,

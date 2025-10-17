@@ -1,6 +1,8 @@
+using AspNetCore.Identity.MongoDbCore.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 using Template.Application.Common.Settings;
 using Template.Domain.Identity;
 
@@ -9,13 +11,13 @@ namespace Template.Infrastructure.Data.Seed
     public class DbSeeder
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly RoleManager<MongoIdentityRole<ObjectId>> _roleManager;
         private readonly DefaultUsersAndRolesOptions _seedOptions;
         private readonly ILogger<DbSeeder> _logger;
 
         public DbSeeder(
             UserManager<ApplicationUser> userManager,
-            RoleManager<IdentityRole> roleManager,
+            RoleManager<MongoIdentityRole<ObjectId>> roleManager,
             IOptions<DefaultUsersAndRolesOptions> seedOptions,
             ILogger<DbSeeder> logger)
         {
@@ -48,7 +50,7 @@ namespace Template.Infrastructure.Data.Seed
             {
                 if (!await _roleManager.RoleExistsAsync(roleName))
                 {
-                    var role = new IdentityRole(roleName);
+                    var role = new MongoIdentityRole<ObjectId>(roleName);
                     var result = await _roleManager.CreateAsync(role);
 
                     if (result.Succeeded)

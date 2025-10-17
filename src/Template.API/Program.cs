@@ -1,8 +1,7 @@
-using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 using Template.API.Extensions;
 using Template.Application;
 using Template.Infrastructure;
-using Template.Infrastructure.Data.Contexts;
 
 namespace Template.API
 {
@@ -18,10 +17,8 @@ namespace Template.API
 
             var app = builder.Build();
 
-            // Migrate databases
-            await app.MigrateDatabaseAsync();
 
-            // Seed database with default data
+            // Seed MongoDB database with default data (no migrations needed for MongoDB)
             await app.SeedDatabaseAsync();
 
             if (app.Environment.IsDevelopment())
