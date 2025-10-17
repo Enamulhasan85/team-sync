@@ -10,32 +10,13 @@ namespace Template.API.Controllers.Common
     {
         protected IActionResult SuccessResponse<T>(T data, string message = "Success")
         {
-            return Ok(new ApiResponse<T>(data, message));
+            return Ok(ApiResponse<T>.Ok(data, message));
         }
 
-        protected IActionResult SuccessResponse(string message = "Success")
+        protected IActionResult FailureResponse<T>(T? data, string message = "Error", List<string>? errors = null)
         {
-            return Ok(new ApiResponse(message));
+            return BadRequest(ApiResponse<T>.Fail(data, message, errors));
         }
 
-        protected IActionResult NotFoundResponse(string message = "Resource not found")
-        {
-            return NotFound(new ApiResponse(message));
-        }
-
-        protected IActionResult BadRequestResponse(string message = "Bad request")
-        {
-            return BadRequest(new ApiResponse(message));
-        }
-
-        protected IActionResult BadRequestResponse(IEnumerable<string> errors)
-        {
-            return BadRequest(new ApiResponse(errors.ToList()));
-        }
-
-        protected IActionResult CreatedResponse<T>(T data, string message = "Resource created successfully")
-        {
-            return StatusCode(201, new ApiResponse<T>(data, message));
-        }
     }
 }

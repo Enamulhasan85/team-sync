@@ -38,14 +38,14 @@ namespace Template.API.Common.Filters
             // Validate pageNumber
             if (pageNumber is not int pn || pn < 1)
             {
-                context.Result = new BadRequestObjectResult(new ApiResponse("Page number must be greater than 0"));
+                context.Result = new BadRequestObjectResult(ApiResponse.Fail("Page number must be greater than 0"));
                 return;
             }
 
             // Validate pageSize
             if (pageSize is not int ps || ps < 1 || ps > _maxPageSize)
             {
-                context.Result = new BadRequestObjectResult(new ApiResponse($"Page size must be between 1 and {_maxPageSize}"));
+                context.Result = new BadRequestObjectResult(ApiResponse.Fail($"Page size must be between 1 and {_maxPageSize}"));
                 return;
             }
         }

@@ -17,56 +17,37 @@ namespace Template.API.Extensions
     /// </summary>
     public static class ServiceCollectionExtensions
     {
-        /// <summary>
-        /// Add Web API specific services and configurations
-        /// </summary>
-        /// <param name="services">The service collection</param>
-        /// <param name="configuration">The configuration</param>
-        /// <returns>The service collection</returns>
         public static IServiceCollection AddWebApiServices(
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            // Add Authentication & Authorization (API responsibility)
             services.AddApiAuthentication(configuration);
             services.AddAuthorization();
 
-            // Add Rate Limiting (API responsibility)
             services.AddRateLimiting(configuration);
 
-            // Add Response Compression (API responsibility)
             services.AddResponseCompression();
 
-            // Add Controllers with global filters (API responsibility)
             services.AddApiControllers();
 
-            // Add API Versioning (API responsibility)
             services.AddCustomApiVersioning();
 
-            // Add FluentValidation (API responsibility)
             services.AddApiValidation();
 
-            // Add AutoMapper for API layer (API responsibility)
             services.AddAutoMapper(Assembly.GetExecutingAssembly());
 
-            // Add API Explorer for OpenAPI/Swagger
             services.AddEndpointsApiExplorer();
 
-            // Add API Documentation (API responsibility)
             services.AddSwaggerServices();
 
-            // Add API-specific services (API responsibility)
             services.AddApiServices();
 
-            // Add CORS (API responsibility)
-            services.AddApiCors();
+            services.AddApiCors(configuration);
 
             return services;
         }
 
-        /// <summary>
-        /// Configure JWT Authentication for API
-        /// </summary>
+
         private static IServiceCollection AddApiAuthentication(
             this IServiceCollection services,
             IConfiguration configuration)
@@ -98,37 +79,27 @@ namespace Template.API.Extensions
                 };
             });
 
-            // Configure JWT settings for DI
             services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
 
             return services;
         }
 
-        /// <summary>
-        /// Configure Controllers with global filters
-        /// </summary>
+
         private static IServiceCollection AddApiControllers(this IServiceCollection services)
         {
             services.AddControllers(options =>
             {
-                // Add global exception handling
                 options.Filters.Add<Template.API.Common.Filters.ExceptionFilter>();
-
-                // Add global validation filter
                 options.Filters.Add<Template.API.Common.Filters.GlobalValidationFilter>();
-
-                // Add pagination validation with configurable max page size
                 options.Filters.Add(new Template.API.Common.Filters.GlobalPaginationValidationFilter(maxPageSize: 100));
             });
 
-            // Configure routing options for lowercase URLs
             services.Configure<RouteOptions>(options =>
             {
                 options.LowercaseUrls = true;
                 options.LowercaseQueryStrings = true;
             });
 
-            // Disable automatic model validation since we handle it globally
             services.Configure<ApiBehaviorOptions>(options =>
             {
                 options.SuppressModelStateInvalidFilter = true;
@@ -137,9 +108,7 @@ namespace Template.API.Extensions
             return services;
         }
 
-        /// <summary>
-        /// Configure FluentValidation for API
-        /// </summary>
+
         private static IServiceCollection AddApiValidation(this IServiceCollection services)
         {
             services.AddFluentValidationAutoValidation();
@@ -148,9 +117,7 @@ namespace Template.API.Extensions
             return services;
         }
 
-        /// <summary>
-        /// Configure API-specific services
-        /// </summary>
+
         private static IServiceCollection AddApiServices(this IServiceCollection services)
         {
             // Register API-specific services here if needed
@@ -158,18 +125,29 @@ namespace Template.API.Extensions
             return services;
         }
 
-        /// <summary>
-        /// Configure CORS for API
-        /// </summary>
-        private static IServiceCollection AddApiCors(this IServiceCollection services)
+        private static IServiceCollection AddApiCors(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddCors(options =>
+            var allowedOrigins = configuration.GetSection("AllowedOrigins").Get<string[]>();
+            if (allowedOrigins != null && allowedOrigins.Length > 0)
             {
-                options.AddDefaultPolicy(policy =>
-                    policy.AllowAnyOrigin()
-                          .AllowAnyHeader()
-                          .AllowAnyMethod());
-            });
+                services.AddCors(options =>
+                {
+                    options.AddDefaultPolicy(policy =>
+                        policy.WithOrigins(allowedOrigins)
+                              .AllowAnyHeader()
+                              .AllowAnyMethod());
+                });
+            }
+            else
+            {
+                services.AddCors(options =>
+                {
+                    options.AddDefaultPolicy(policy =>
+                        policy.AllowAnyOrigin()
+                              .AllowAnyHeader()
+                              .AllowAnyMethod());
+                });
+            }
 
             return services;
         }

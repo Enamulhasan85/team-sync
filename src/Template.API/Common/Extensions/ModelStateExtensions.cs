@@ -49,7 +49,7 @@ namespace Template.API.Common.Extensions
         public static ApiResponse ToApiResponse(this ModelStateDictionary modelState, string? message = null)
         {
             var errors = modelState.ToErrorMessages();
-            return new ApiResponse(errors);
+            return ApiResponse.Fail(message ?? "Validation failed", errors);
         }
 
         /// <summary>
