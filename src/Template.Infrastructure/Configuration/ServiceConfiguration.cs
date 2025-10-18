@@ -16,6 +16,7 @@ namespace Template.Infrastructure.Configuration
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<INotificationService, NotificationService>();
+            services.AddSingleton<ICacheService, RedisCacheService>();
 
             return services;
         }

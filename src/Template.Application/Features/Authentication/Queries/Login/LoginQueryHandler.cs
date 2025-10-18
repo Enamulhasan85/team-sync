@@ -11,21 +11,31 @@ namespace Template.Application.Features.Authentication.Queries.Login
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ITokenService _tokenService;
+        private readonly ICacheService _cacheService;
 
         public LoginQueryHandler(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            ITokenService tokenService)
+            ITokenService tokenService,
+            ICacheService cacheService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _tokenService = tokenService;
+            _cacheService = cacheService;
         }
 
         public async Task<Result<LoginResponse>> Handle(
             LoginQuery request,
             CancellationToken cancellationToken)
         {
+            var cacheKey = $"user:session:{request.Email}";
+            var cachedSession = await _cacheService.GetAsync<LoginResponse>(cacheKey);
+            if (cachedSession != null)
+            {
+                return Result<LoginResponse>.Success(cachedSession);
+            }
+
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
@@ -70,6 +80,8 @@ namespace Template.Application.Features.Authentication.Queries.Login
                 RefreshToken = refreshToken,
                 ExpiresAt = expiresAt
             };
+
+            await _cacheService.SetAsync(cacheKey, response, TimeSpan.FromHours(24));
 
             return Result<LoginResponse>.Success(response);
         }
