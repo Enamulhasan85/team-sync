@@ -1,7 +1,9 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Template.Application.Common.Interfaces;
 using Template.Application.Common.Models;
+using Template.Application.Common.Settings;
 using Template.Domain.Identity;
 
 namespace Template.Application.Features.Authentication.Queries.Login
@@ -12,24 +14,27 @@ namespace Template.Application.Features.Authentication.Queries.Login
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ITokenService _tokenService;
         private readonly ICacheService _cacheService;
+        private readonly JwtSettings _jwtSettings;
 
         public LoginQueryHandler(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             ITokenService tokenService,
-            ICacheService cacheService)
+            ICacheService cacheService,
+            IOptions<JwtSettings> jwtOptions)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _tokenService = tokenService;
             _cacheService = cacheService;
+            _jwtSettings = jwtOptions.Value;
         }
 
         public async Task<Result<LoginResponse>> Handle(
             LoginQuery request,
             CancellationToken cancellationToken)
         {
-            var cacheKey = $"user:session:{request.Email}";
+            var cacheKey = $"users:session:{request.Email}";
             var cachedSession = await _cacheService.GetAsync<LoginResponse>(cacheKey);
             if (cachedSession != null)
             {
@@ -65,13 +70,14 @@ namespace Template.Application.Features.Authentication.Queries.Login
                 roles);
 
             var refreshToken = await _tokenService.GenerateRefreshTokenAsync();
-            var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+            var refreshTokenExpiry = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays);
 
             user.SetRefreshToken(refreshToken, refreshTokenExpiry);
             user.UpdateLastLogin();
             await _userManager.UpdateAsync(user);
 
-            var expiresAt = DateTime.UtcNow.AddHours(24);
+            var expiryMinutes = _jwtSettings.ExpiryMinutes;
+            var expiresAt = DateTime.UtcNow.AddMinutes(expiryMinutes);
 
             var response = new LoginResponse
             {
@@ -81,7 +87,7 @@ namespace Template.Application.Features.Authentication.Queries.Login
                 ExpiresAt = expiresAt
             };
 
-            await _cacheService.SetAsync(cacheKey, response, TimeSpan.FromHours(24));
+            await _cacheService.SetAsync(cacheKey, response, TimeSpan.FromMinutes(expiryMinutes));
 
             return Result<LoginResponse>.Success(response);
         }

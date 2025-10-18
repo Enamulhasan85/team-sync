@@ -6,39 +6,28 @@ using Template.Application.Common.Settings;
 
 namespace Template.Infrastructure.Configuration
 {
-    /// <summary>
-    /// Caching configuration and setup
-    /// </summary>
     public static class CacheConfiguration
     {
         public static IServiceCollection AddCacheConfiguration(
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            // Get cache settings from configuration
-            var cacheSettings = configuration.GetSection("CacheSettings").Get<CacheOptions>();
+            var memoryCacheSettings = configuration.GetSection("MemoryCacheSettings").Get<InMemoryCacheOptions>() ?? new InMemoryCacheOptions();
 
-            if (cacheSettings == null)
-            {
-                // Use default settings if not configured
-                cacheSettings = new CacheOptions();
-            }
-
-            // Configure the settings for DI
             services.Configure<CacheOptions>(configuration.GetSection("CacheSettings"));
+            services.Configure<InMemoryCacheOptions>(configuration.GetSection("MemoryCacheSettings"));
 
-            // Configure memory cache
             services.AddMemoryCache(options =>
             {
-                options.SizeLimit = cacheSettings.MaxCacheSize;
-                options.CompactionPercentage = 0.05; // Remove 5% when cache is full
+                options.SizeLimit = memoryCacheSettings.MaxCacheSize;
+                options.CompactionPercentage = 0.05;
                 options.ExpirationScanFrequency = TimeSpan.FromMinutes(5);
             });
 
             services.AddSingleton<IConnectionMultiplexer>(sp =>
             {
-                var configuration = sp.GetRequiredService<IConfiguration>().GetConnectionString("Redis");
-                return ConnectionMultiplexer.Connect(configuration!);
+                var redisConnection = sp.GetRequiredService<IConfiguration>().GetConnectionString("Redis");
+                return ConnectionMultiplexer.Connect(redisConnection!);
             });
 
             return services;
