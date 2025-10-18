@@ -28,15 +28,9 @@ namespace Template.Infrastructure.Configuration
                 {
                     // Password settings
                     options.Password.RequiredLength = 8;
-                    options.Password.RequireUppercase = true;
-                    options.Password.RequireLowercase = true;
-                    options.Password.RequireDigit = true;
-                    options.Password.RequiredUniqueChars = 1;
 
                     // User settings
                     options.User.RequireUniqueEmail = true;
-                    options.User.AllowedUserNameCharacters =
-                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
 
                     // Sign-in settings
                     options.SignIn.RequireConfirmedEmail = true;
