@@ -27,12 +27,12 @@ namespace Template.Infrastructure.Configuration
             services.Configure<CacheOptions>(configuration.GetSection("CacheSettings"));
 
             // Configure memory cache
-            services.AddMemoryCache(options =>
-            {
-                options.SizeLimit = cacheSettings.MaxCacheSize;
-                options.CompactionPercentage = 0.05; // Remove 5% when cache is full
-                options.ExpirationScanFrequency = TimeSpan.FromMinutes(5);
-            });
+            // services.AddMemoryCache(options =>
+            // {
+            //     options.SizeLimit = cacheSettings.MaxCacheSize;
+            //     options.CompactionPercentage = 0.05; // Remove 5% when cache is full
+            //     options.ExpirationScanFrequency = TimeSpan.FromMinutes(5);
+            // });
 
             // Note: For distributed cache (Redis), add the appropriate package and uncomment:
             // services.AddStackExchangeRedisCache(options => { ... });

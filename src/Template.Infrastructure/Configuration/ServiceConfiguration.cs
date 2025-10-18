@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Template.Application.Common.Interfaces;
-using Template.Application.Common.Services;
 using Template.Infrastructure.Services;
 
 namespace Template.Infrastructure.Configuration
