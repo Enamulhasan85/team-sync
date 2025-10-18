@@ -23,22 +23,10 @@ namespace Template.API.Common.Filters
 
             var response = context.Exception switch
             {
-                NotFoundException notFoundEx => new ApiResponse(notFoundEx.Message)
-                {
-                    Success = false,
-                    Errors = new List<string> { notFoundEx.Message }
-                },
-                ValidationException validationEx => new ApiResponse(validationEx.Errors.Select(e => e).ToList()),
-                ForbiddenException forbiddenEx => new ApiResponse(forbiddenEx.Message)
-                {
-                    Success = false,
-                    Errors = new List<string> { forbiddenEx.Message }
-                },
-                _ => new ApiResponse("An error occurred while processing your request.")
-                {
-                    Success = false,
-                    Errors = new List<string> { "Internal server error" }
-                }
+                NotFoundException notFoundEx => ApiResponse.Fail(notFoundEx.Message),
+                ValidationException validationEx => ApiResponse.Fail("Validation failed", validationEx.Errors.Select(e => e).ToList()),
+                ForbiddenException forbiddenEx => ApiResponse.Fail(forbiddenEx.Message),
+                _ => ApiResponse.Fail("An error occurred while processing your request.")
             };
 
             var statusCode = context.Exception switch

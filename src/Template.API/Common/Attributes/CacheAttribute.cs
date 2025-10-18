@@ -9,34 +9,21 @@ using Template.Application.Common.Settings;
 
 namespace Template.API.Common.Attributes
 {
-    /// <summary>
-    /// Simple cache attribute for GET requests with configurable settings.
-    /// Only caches successful (200 OK) responses with non-null values.
-    /// </summary>
     public class CacheAttribute : ActionFilterAttribute
     {
         private readonly int? _durationSeconds;
         private readonly bool? _useSlidingExpiration;
         private readonly string? _keyPrefix;
 
-        /// <summary>
-        /// Uses default cache settings from configuration
-        /// </summary>
         public CacheAttribute()
         {
         }
 
-        /// <summary>
-        /// Cache with custom duration in seconds
-        /// </summary>
         public CacheAttribute(int durationSeconds)
         {
             _durationSeconds = durationSeconds;
         }
 
-        /// <summary>
-        /// Cache with full customization
-        /// </summary>
         public CacheAttribute(int durationSeconds, bool useSlidingExpiration, string keyPrefix = "")
         {
             _durationSeconds = durationSeconds;
@@ -46,7 +33,6 @@ namespace Template.API.Common.Attributes
 
         public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
-            // Only cache GET requests
             if (!IsGetRequest(context))
             {
                 await next();
@@ -54,12 +40,11 @@ namespace Template.API.Common.Attributes
             }
 
             var memoryCache = context.HttpContext.RequestServices.GetRequiredService<IMemoryCache>();
-            var cacheOptions = context.HttpContext.RequestServices.GetRequiredService<IOptions<CacheOptions>>().Value;
+            var cacheOptions = context.HttpContext.RequestServices.GetRequiredService<IOptions<InMemoryCacheOptions>>().Value;
             var logger = context.HttpContext.RequestServices.GetService<ILogger<CacheAttribute>>();
 
             var cacheKey = GenerateCacheKey(context, cacheOptions);
 
-            // Try to get from cache
             if (memoryCache.TryGetValue(cacheKey, out var cachedValue))
             {
                 LogCacheHit(logger, cacheKey, cacheOptions.EnableLogging);
@@ -69,10 +54,8 @@ namespace Template.API.Common.Attributes
 
             LogCacheMiss(logger, cacheKey, cacheOptions.EnableLogging);
 
-            // Execute action
             var executedContext = await next();
 
-            // Cache successful responses
             if (IsSuccessfulResponse(executedContext.Result))
             {
                 var objectResult = (ObjectResult)executedContext.Result!;
@@ -80,22 +63,16 @@ namespace Template.API.Common.Attributes
             }
         }
 
-        /// <summary>
-        /// Generates a consistent cache key based on controller, action, and parameters
-        /// </summary>
-        private string GenerateCacheKey(ActionExecutingContext context, CacheOptions options)
+        private string GenerateCacheKey(ActionExecutingContext context, InMemoryCacheOptions options)
         {
             var controllerName = context.Controller.GetType().Name.Replace("Controller", "");
             var actionName = context.ActionDescriptor.RouteValues["action"] ?? "Unknown";
             var keyPrefix = _keyPrefix ?? options.DefaultKeyPrefix;
 
-            // Serialize parameters for consistent key generation
             var parameters = SerializeParameters(context.ActionArguments);
 
-            // Create base key string
             var keyString = $"{keyPrefix}:{controllerName}:{actionName}:{parameters}";
 
-            // Generate SHA256 hash for consistent key length and avoid special characters
             using var sha256 = SHA256.Create();
             var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(keyString));
             var hashString = Convert.ToBase64String(hashBytes)
@@ -155,9 +132,8 @@ namespace Template.API.Common.Attributes
 
         /// <summary>
         /// Sets cache entry with configured options
-        /// </summary>
         private void SetCache(IMemoryCache memoryCache, string cacheKey, object value,
-            CacheOptions options, ILogger<CacheAttribute>? logger)
+            InMemoryCacheOptions options, ILogger<CacheAttribute>? logger)
         {
             try
             {
@@ -189,9 +165,6 @@ namespace Template.API.Common.Attributes
             }
         }
 
-        /// <summary>
-        /// Converts string priority to enum
-        /// </summary>
         private static CacheItemPriority GetCachePriority(string priority) => priority?.ToLowerInvariant() switch
         {
             "low" => CacheItemPriority.Low,

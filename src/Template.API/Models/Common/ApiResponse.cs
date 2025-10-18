@@ -2,52 +2,25 @@ namespace Template.API.Models.Common
 {
     public class ApiResponse<T>
     {
-        public bool Success { get; set; }
-        public string? Message { get; set; }
-        public T? Data { get; set; }
-        public List<string>? Errors { get; set; }
+        public bool Success { get; init; }
+        public string? Message { get; init; }
+        public T? Data { get; init; }
+        public List<string>? Errors { get; init; }
 
-        public ApiResponse()
-        {
-            Success = true;
-        }
+        public static ApiResponse<T> Ok(T data, string? message = null) =>
+            new() { Success = true, Data = data, Message = message };
 
-        public ApiResponse(T data, string? message = null)
-        {
-            Success = true;
-            Data = data;
-            Message = message;
-        }
+        public static ApiResponse<T> Fail(T? data, string message, List<string>? errors = null) =>
+            new() { Success = false, Message = message, Data = data, Errors = errors };
 
-        public ApiResponse(string error)
-        {
-            Success = false;
-            Errors = new List<string> { error };
-        }
-
-        public ApiResponse(List<string> errors)
-        {
-            Success = false;
-            Errors = errors;
-        }
     }
 
     public class ApiResponse : ApiResponse<object>
     {
-        public ApiResponse() : base() { }
-        public ApiResponse(string message) : base()
-        {
-            Message = message;
-        }
-        public ApiResponse(string error, bool isError) : base(error)
-        {
-            if (!isError)
-            {
-                Success = true;
-                Message = error;
-                Errors = null;
-            }
-        }
-        public ApiResponse(List<string> errors) : base(errors) { }
+        public static ApiResponse Ok(string? message = null) =>
+            new() { Success = true, Message = message };
+
+        public static ApiResponse Fail(string message, List<string>? errors = null) =>
+            new() { Success = false, Message = message, Errors = errors };
     }
 }
