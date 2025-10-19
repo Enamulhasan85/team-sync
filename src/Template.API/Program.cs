@@ -39,6 +39,9 @@ namespace Template.API
 
             app.MapControllers();
 
+            // // Map SignalR hub for real-time notifications
+            // app.MapHub<Template.Infrastructure.Hubs.NotificationHub>("/hubs/notifications");
+
             app.Run();
         }
     }

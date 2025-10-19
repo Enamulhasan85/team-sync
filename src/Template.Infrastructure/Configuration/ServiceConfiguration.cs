@@ -30,6 +30,16 @@ namespace Template.Infrastructure.Configuration
 
             services.AddScoped(typeof(IRepository<,>), typeof(MongoRepository<,>));
 
+            // RabbitMQ configuration
+            services.Configure<RabbitMqSettings>(configuration.GetSection("RabbitMq"));
+            services.AddSingleton<IEventPublisher, RabbitMqPublisher>();
+
+            // Register RabbitMQ consumer as a hosted service
+            // services.AddHostedService<RabbitMqConsumer>();
+
+            // SignalR for real-time notifications
+            // services.AddSignalR();
+
             return services;
         }
     }
