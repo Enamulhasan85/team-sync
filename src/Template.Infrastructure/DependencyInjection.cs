@@ -26,7 +26,7 @@ namespace Template.Infrastructure
             services.AddIdentityConfiguration(configuration);
 
             // Infrastructure services configuration
-            services.AddInfrastructureServicesConfiguration();
+            services.AddInfrastructureServicesConfiguration(configuration);
 
             // Email configuration
             services.AddEmailConfiguration(configuration);
