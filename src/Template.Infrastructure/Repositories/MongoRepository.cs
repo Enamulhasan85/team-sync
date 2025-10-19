@@ -23,9 +23,20 @@ namespace Template.Infrastructure.Repositories
             _collection = _context.GetCollection<T>();
         }
 
+        private FilterDefinition<T> ApplySoftDeleteFilter(FilterDefinition<T> filter)
+        {
+            if (typeof(AuditableEntity<TKey>).IsAssignableFrom(typeof(T)))
+            {
+                var softDeleteFilter = Builders<T>.Filter.Eq("IsDeleted", false);
+                return Builders<T>.Filter.And(filter, softDeleteFilter);
+            }
+            return filter;
+        }
+
         public async Task<T?> GetByIdAsync(TKey id, CancellationToken cancellationToken = default)
         {
-            var filter = Builders<T>.Filter.Eq(x => x.Id, id);
+            var filter = Builders<T>.Filter.Where(x => x.Id.Equals(id));
+            filter = ApplySoftDeleteFilter(filter);
             return await _collection.Find(filter).FirstOrDefaultAsync(cancellationToken);
         }
 
@@ -35,6 +46,7 @@ namespace Template.Infrastructure.Repositories
                 ? Builders<T>.Filter.Where(predicate)
                 : Builders<T>.Filter.Empty;
 
+            filter = ApplySoftDeleteFilter(filter);
             return await _collection.Find(filter).ToListAsync(cancellationToken);
         }
 
@@ -44,6 +56,7 @@ namespace Template.Infrastructure.Repositories
                 ? Builders<T>.Filter.Where(predicate)
                 : Builders<T>.Filter.Empty;
 
+            filter = ApplySoftDeleteFilter(filter);
             var count = await _collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
             return count > 0;
         }
@@ -54,6 +67,7 @@ namespace Template.Infrastructure.Repositories
                 ? Builders<T>.Filter.Where(predicate)
                 : Builders<T>.Filter.Empty;
 
+            filter = ApplySoftDeleteFilter(filter);
             var count = await _collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
             return (int)count;
         }
@@ -69,6 +83,8 @@ namespace Template.Infrastructure.Repositories
             var filter = predicate != null
                 ? Builders<T>.Filter.Where(predicate)
                 : Builders<T>.Filter.Empty;
+
+            filter = ApplySoftDeleteFilter(filter);
 
             var skipNumber = (page - 1) * pageSize;
 
@@ -111,6 +127,7 @@ namespace Template.Infrastructure.Repositories
             }
 
             var filter = Builders<T>.Filter.Eq(x => x.Id, entity.Id);
+            filter = ApplySoftDeleteFilter(filter);
             await _collection.ReplaceOneAsync(filter, entity, cancellationToken: cancellationToken);
         }
 
