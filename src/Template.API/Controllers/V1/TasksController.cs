@@ -3,9 +3,9 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Template.API.Controllers.Common;
-using Template.Application.Features.Projects.Commands;
-using Template.Application.Features.Projects.Queries;
-using Template.Domain.Entities;
+using Template.Application.Features.Tasks.Commands;
+using Template.Application.Features.Tasks.Queries;
+using Template.Domain.Enums;
 
 namespace Template.API.Controllers.V1
 {
@@ -13,11 +13,11 @@ namespace Template.API.Controllers.V1
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
     [Authorize]
-    public class ProjectsController : BaseController
+    public class TasksController : BaseController
     {
         private readonly IMediator _mediator;
 
-        public ProjectsController(IMediator mediator)
+        public TasksController(IMediator mediator)
         {
             _mediator = mediator;
         }
@@ -26,16 +26,20 @@ namespace Template.API.Controllers.V1
         public async Task<IActionResult> GetPaginated(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10,
+            [FromQuery] string? projectId = null,
             [FromQuery] int? status = null,
+            [FromQuery] string? assigneeId = null,
             [FromQuery] string? sortBy = null,
             [FromQuery] bool sortDescending = false,
             CancellationToken cancellationToken = default)
         {
-            var query = new GetPaginatedProjectsQuery
+            var query = new GetPaginatedTasksQuery
             {
                 PageNumber = pageNumber,
                 PageSize = pageSize,
-                Status = status.HasValue ? (ProjectStatus)status.Value : null,
+                ProjectId = projectId,
+                Status = status.HasValue ? (TaskWorkflowStatus)status.Value : null,
+                AssigneeId = assigneeId,
                 SortBy = sortBy,
                 SortDescending = sortDescending
             };
@@ -46,23 +50,23 @@ namespace Template.API.Controllers.V1
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(string id, CancellationToken cancellationToken)
         {
-            var query = new GetProjectByIdQuery { Id = id };
+            var query = new GetTaskByIdQuery { Id = id };
             var result = await _mediator.Send(query, cancellationToken);
             return result.Succeeded ? SuccessResponse(result.Value) : FailureResponse(result.Errors);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateProjectCommand command, CancellationToken cancellationToken)
+        public async Task<IActionResult> Create([FromBody] CreateTaskCommand command, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(command, cancellationToken);
             return result.Succeeded ? SuccessResponse(result.Value) : FailureResponse(result.Errors);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] UpdateProjectCommand command, CancellationToken cancellationToken)
+        public async Task<IActionResult> Update(string id, [FromBody] UpdateTaskCommand command, CancellationToken cancellationToken)
         {
             if (id != command.Id)
-                return FailureResponse("Project ID in URL does not match ID in body");
+                return FailureResponse("Task ID in URL does not match ID in body");
 
             var result = await _mediator.Send(command, cancellationToken);
             return result.Succeeded ? SuccessResponse(result.Value) : FailureResponse(result.Errors);
@@ -71,7 +75,7 @@ namespace Template.API.Controllers.V1
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
         {
-            var command = new DeleteProjectCommand { Id = id };
+            var command = new DeleteTaskCommand { Id = id };
             var result = await _mediator.Send(command, cancellationToken);
             return result.Succeeded ? SuccessResponse(result.Value) : FailureResponse(result.Errors);
         }
