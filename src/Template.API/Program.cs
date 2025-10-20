@@ -30,6 +30,8 @@ namespace Template.API
 
             app.UseResponseCompression();
 
+            app.UseCors();
+
             app.UseExceptionHandler("/error");
 
             app.UseRateLimiter();
@@ -38,6 +40,9 @@ namespace Template.API
             app.UseAuthorization();
 
             app.MapControllers();
+
+            // Map SignalR hub for real-time notifications
+            app.MapHub<Template.Infrastructure.Hubs.NotificationHub>("/hubs/notifications");
 
             app.Run();
         }

@@ -26,6 +26,7 @@ namespace Template.API.Common.Filters
                 NotFoundException notFoundEx => ApiResponse.Fail(notFoundEx.Message),
                 ValidationException validationEx => ApiResponse.Fail("Validation failed", validationEx.Errors.Select(e => e).ToList()),
                 ForbiddenException forbiddenEx => ApiResponse.Fail(forbiddenEx.Message),
+                FluentValidation.ValidationException fluentEx => ApiResponse.Fail("Validation failed", fluentEx.Errors.Select(e => e.ErrorMessage).ToList()),
                 _ => ApiResponse.Fail("An error occurred while processing your request.")
             };
 
@@ -34,6 +35,7 @@ namespace Template.API.Common.Filters
                 NotFoundException => StatusCodes.Status404NotFound,
                 ValidationException => StatusCodes.Status400BadRequest,
                 ForbiddenException => StatusCodes.Status403Forbidden,
+                FluentValidation.ValidationException => StatusCodes.Status400BadRequest,
                 _ => StatusCodes.Status500InternalServerError
             };
 

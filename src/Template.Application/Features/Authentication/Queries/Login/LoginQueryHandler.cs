@@ -34,13 +34,6 @@ namespace Template.Application.Features.Authentication.Queries.Login
             LoginQuery request,
             CancellationToken cancellationToken)
         {
-            var cacheKey = $"users:session:{request.Email}";
-            var cachedSession = await _cacheService.GetAsync<LoginResponse>(cacheKey);
-            if (cachedSession != null)
-            {
-                return Result<LoginResponse>.Success(cachedSession);
-            }
-
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
@@ -62,12 +55,22 @@ namespace Template.Application.Features.Authentication.Queries.Login
                 return Result<LoginResponse>.Failure("Invalid email or password");
             }
 
+            var cacheKey = $"users:session:{user.Id}:{user.SecurityStamp}";
+            var cachedSession = await _cacheService.GetAsync<LoginResponse>(cacheKey);
+            if (cachedSession != null)
+            {
+                return Result<LoginResponse>.Success(cachedSession);
+            }
+
             var roles = await _userManager.GetRolesAsync(user);
 
             var token = await _tokenService.GenerateTokenAsync(
                 user.Id.ToString(),
                 user.Email!,
-                roles);
+                roles,
+                false,
+                user.UserName,
+                user.FullName);
 
             var refreshToken = await _tokenService.GenerateRefreshTokenAsync();
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays);

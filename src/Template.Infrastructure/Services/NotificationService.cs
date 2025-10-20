@@ -1,7 +1,7 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Template.Application.Common.Interfaces;
 using Template.Application.Common.Settings;
-using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Logging;
 
 namespace Template.Infrastructure.Services;
 
@@ -27,7 +27,7 @@ public class NotificationService : INotificationService
         try
         {
             _logger.LogInformation("Sending email to {To} with subject: {Subject}", to, subject);
-            
+
             // TODO: Implement email sending logic
             // Options: SendGrid, SMTP, AWS SES, etc.
             // Example with SendGrid:
@@ -39,7 +39,7 @@ public class NotificationService : INotificationService
             //     body,
             //     body);
             // await client.SendEmailAsync(msg, cancellationToken);
-            
+
             await Task.Delay(100, cancellationToken); // Simulate async operation
             _logger.LogInformation("Email sent successfully to {To}", to);
         }
@@ -55,7 +55,7 @@ public class NotificationService : INotificationService
         try
         {
             _logger.LogInformation("Sending SMS to {PhoneNumber}", phoneNumber);
-            
+
             // TODO: Implement SMS sending logic
             // Options: Twilio, AWS SNS, Azure Communication Services, etc.
             // Example with Twilio:
@@ -64,7 +64,7 @@ public class NotificationService : INotificationService
             //     body: message,
             //     from: new PhoneNumber(_smsSettings.FromNumber),
             //     to: new PhoneNumber(phoneNumber));
-            
+
             await Task.Delay(100, cancellationToken); // Simulate async operation
             _logger.LogInformation("SMS sent successfully to {PhoneNumber}", phoneNumber);
         }
@@ -80,7 +80,7 @@ public class NotificationService : INotificationService
         try
         {
             _logger.LogInformation("Sending push notification to user {UserId}", userId);
-            
+
             // TODO: Implement push notification logic
             // Options: Firebase Cloud Messaging, Apple Push Notifications, Azure Notification Hubs, etc.
             // Example with Firebase:
@@ -94,7 +94,7 @@ public class NotificationService : INotificationService
             //     }
             // };
             // await FirebaseMessaging.DefaultInstance.SendAsync(message, cancellationToken);
-            
+
             await Task.Delay(100, cancellationToken); // Simulate async operation
             _logger.LogInformation("Push notification sent successfully to user {UserId}", userId);
         }

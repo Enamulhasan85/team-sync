@@ -13,10 +13,14 @@ namespace Template.API.Controllers.Common
             return Ok(ApiResponse<T>.Ok(data, message));
         }
 
-        protected IActionResult FailureResponse<T>(T? data, string message = "Error", List<string>? errors = null)
+        protected IActionResult FailureResponse(string message = "Error", List<string>? errors = null)
         {
-            return BadRequest(ApiResponse<T>.Fail(data, message, errors));
+            return BadRequest(ApiResponse<object?>.Fail(null, message, errors));
         }
 
+        protected IActionResult FailureResponse(List<string> errors)
+        {
+            return BadRequest(ApiResponse<object?>.Fail(null, "Error", errors));
+        }
     }
 }

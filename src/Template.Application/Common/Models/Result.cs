@@ -9,16 +9,16 @@ namespace Template.Application.Common.Models
     /// <typeparam name="T">The type of the result value</typeparam>
     public class Result<T>
     {
-        protected internal Result(bool succeeded, T? value, IEnumerable<string>? errors)
+        protected internal Result(bool succeeded, T? value, List<string>? errors)
         {
             Succeeded = succeeded;
             Value = value;
-            Errors = errors?.ToArray() ?? new string[0];
+            Errors = errors ?? new List<string>();
         }
 
         public bool Succeeded { get; set; }
         public T? Value { get; set; }
-        public string[] Errors { get; set; }
+        public List<string> Errors { get; set; }
 
         public static Result<T> Success(T value)
         {
@@ -27,12 +27,12 @@ namespace Template.Application.Common.Models
 
         public static Result<T> Failure(IEnumerable<string> errors)
         {
-            return new Result<T>(false, default(T), errors);
+            return new Result<T>(false, default(T), errors.ToList());
         }
 
         public static Result<T> Failure(string error)
         {
-            return new Result<T>(false, default(T), new[] { error });
+            return new Result<T>(false, default(T), new List<string> { error });
         }
     }
 

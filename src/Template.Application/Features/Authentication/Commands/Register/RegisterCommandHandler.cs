@@ -37,7 +37,7 @@ namespace Template.Application.Features.Authentication.Commands.Register
 
             if (!result.Succeeded)
             {
-                var errors = result.Errors.Select(e => e.Description);
+                var errors = result.Errors.Select(e => e.Description).ToList();
                 return Result<RegisterResponse>.Failure(errors);
             }
 
