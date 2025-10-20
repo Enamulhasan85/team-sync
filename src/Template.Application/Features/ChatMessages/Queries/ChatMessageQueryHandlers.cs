@@ -30,9 +30,11 @@ namespace Template.Application.Features.ChatMessages.Queries
 
             ObjectId.TryParse(request.ProjectId, out var projectObjectId);
 
+            var version = await _cacheService.GetAsync<int>($"chatmessages:v:project:{projectObjectId}");
+
             if (request.PageNumber == 1 && request.PageSize == 20)
             {
-                var cacheKey = $"chatmessages:project:{request.ProjectId}:latest20";
+                var cacheKey = $"chatmessages:project:{request.ProjectId}:{version}:latest20";
                 var cachedMessages = await _cacheService.GetAsync<PaginatedResult<ChatMessageDto>>(cacheKey);
 
                 if (cachedMessages != null)
@@ -54,7 +56,7 @@ namespace Template.Application.Features.ChatMessages.Queries
 
             if (request.PageNumber == 1 && request.PageSize == 20)
             {
-                var cacheKey = $"chatmessages:project:{request.ProjectId}:latest20";
+                var cacheKey = $"chatmessages:project:{request.ProjectId}:{version}:latest20";
                 await _cacheService.SetAsync(cacheKey, result);
             }
 

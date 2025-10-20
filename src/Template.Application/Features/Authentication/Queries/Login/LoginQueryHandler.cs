@@ -67,7 +67,10 @@ namespace Template.Application.Features.Authentication.Queries.Login
             var token = await _tokenService.GenerateTokenAsync(
                 user.Id.ToString(),
                 user.Email!,
-                roles);
+                roles,
+                false,
+                user.UserName,
+                user.FullName);
 
             var refreshToken = await _tokenService.GenerateRefreshTokenAsync();
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays);
