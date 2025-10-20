@@ -44,6 +44,8 @@ namespace Template.API.Extensions
 
             services.AddApiCors(configuration);
 
+            services.AddSignalR();
+
             return services;
         }
 
@@ -76,6 +78,21 @@ namespace Template.API.Extensions
                     IssuerSigningKey = new SymmetricSecurityKey(key),
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero // Remove default 5-minute tolerance
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
                 };
             });
 
@@ -135,7 +152,8 @@ namespace Template.API.Extensions
                     options.AddDefaultPolicy(policy =>
                         policy.WithOrigins(allowedOrigins)
                               .AllowAnyHeader()
-                              .AllowAnyMethod());
+                              .AllowAnyMethod()
+                              .AllowCredentials());
                 });
             }
             else

@@ -29,7 +29,7 @@ namespace Template.Application.Features.Tasks
                 .ForMember(dest => dest.LastModifiedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.LastModifiedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
-                .ForMember(dest => dest.ProjectId, opt => opt.MapFrom(src => ObjectId.Parse(src.ProjectId)))
+                .ForMember(dest => dest.ProjectId, opt => opt.Ignore())
                 .ForMember(dest => dest.AssigneeId, opt => opt.MapFrom(src => ParseOptionalObjectId(src.AssigneeId)));
 
             // Entity to DTO mappings

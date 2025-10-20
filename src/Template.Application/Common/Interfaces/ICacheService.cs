@@ -5,6 +5,8 @@ namespace Template.Application.Common.Interfaces
         Task SetAsync<T>(string key, T value, TimeSpan? expiry = null);
         Task<T?> GetAsync<T>(string key);
         Task RemoveAsync(string key);
+        Task RemoveByPatternAsync(string pattern);
+        Task<long> IncrementAsync(string key, long value = 1, TimeSpan? expiry = null);
     }
 
 }

@@ -88,6 +88,50 @@ namespace Template.Infrastructure.Services
             }
         }
 
+        public async Task RemoveByPatternAsync(string pattern)
+        {
+            try
+            {
+                var server = _database.Multiplexer.GetServer(_database.Multiplexer.GetEndPoints().First());
+                var keys = server.Keys(pattern: pattern).ToArray();
+
+                var deletedCount = await _database.KeyDeleteAsync(keys);
+                if (_cacheOptions.EnableLogging)
+                {
+                    _logger.LogDebug("Cache removed for pattern: {Pattern}, deleted {Count} keys", pattern, deletedCount);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing cache values for pattern: {Pattern}", pattern);
+            }
+        }
+
+        public async Task<long> IncrementAsync(string key, long value = 1, TimeSpan? expirationTime = null)
+        {
+            try
+            {
+                var newValue = await _database.StringIncrementAsync(key, value);
+
+                if (expirationTime.HasValue)
+                {
+                    await _database.KeyExpireAsync(key, expirationTime.Value);
+                }
+
+                if (_cacheOptions.EnableLogging)
+                {
+                    _logger.LogDebug("Cache incremented for key: {Key}, new value: {Value}", key, newValue);
+                }
+
+                return newValue;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error incrementing cache value for key: {Key}", key);
+                return 0;
+            }
+        }
+
     }
 }
 
