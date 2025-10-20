@@ -57,41 +57,37 @@ namespace Template.Application.Features.Tasks.Queries
                 return Result<PaginatedResult<TaskDto>>.Success(cachedResult);
             }
 
-            // Build filter predicate
-            var tasks = await _repository.FindAsync(predicate: task =>
-                (string.IsNullOrEmpty(request.ProjectId) || task.ProjectId == ObjectId.Parse(request.ProjectId)) &&
-                (!request.Status.HasValue || task.Status == request.Status.Value) &&
-                (string.IsNullOrEmpty(request.AssigneeId) || task.AssigneeId == ObjectId.Parse(request.AssigneeId)),
-                cancellationToken);
-
-            var taskList = tasks.ToList();
-
-            // Apply sorting
-            if (!string.IsNullOrEmpty(request.SortBy))
-            {
-                taskList = request.SortBy.ToLower() switch
+            var paginatedResult = await _repository.GetPaginatedAsync(
+                page: request.PageNumber,
+                pageSize: request.PageSize,
+                predicate: task =>
+                    (string.IsNullOrEmpty(request.ProjectId)
+                        || task.ProjectId == ObjectId.Parse(request.ProjectId)) &&
+                    (!request.Status.HasValue
+                        || task.Status == request.Status.Value) &&
+                    (string.IsNullOrEmpty(request.AssigneeId)
+                        || task.AssigneeId == ObjectId.Parse(request.AssigneeId)),
+                orderBy: request.SortBy switch
                 {
-                    "title" => request.SortDescending ? taskList.OrderByDescending(t => t.Title).ToList() : taskList.OrderBy(t => t.Title).ToList(),
-                    "status" => request.SortDescending ? taskList.OrderByDescending(t => t.Status).ToList() : taskList.OrderBy(t => t.Status).ToList(),
-                    "duedate" => request.SortDescending ? taskList.OrderByDescending(t => t.DueDate).ToList() : taskList.OrderBy(t => t.DueDate).ToList(),
-                    "createdat" => request.SortDescending ? taskList.OrderByDescending(t => t.CreatedAt).ToList() : taskList.OrderBy(t => t.CreatedAt).ToList(),
-                    _ => taskList
-                };
-            }
+                    "name" => p => p.Title,
+                    "status" => p => p.Status,
+                    _ => p => p.CreatedAt
+                },
+                orderByDescending: request.SortDescending
+            );
 
-            // Apply pagination
-            var totalCount = taskList.Count;
-            var pagedTasks = taskList
-                .Skip((request.PageNumber - 1) * request.PageSize)
-                .Take(request.PageSize)
-                .ToList();
+            var taskDtos = _mapper.Map<List<TaskDto>>(paginatedResult.Items);
 
-            var dtos = _mapper.Map<List<TaskDto>>(pagedTasks);
-            var paginatedResult = new PaginatedResult<TaskDto>(dtos, totalCount, request.PageNumber, request.PageSize);
+            var result = new PaginatedResult<TaskDto>(
+                taskDtos,
+                paginatedResult.TotalCount,
+                paginatedResult.PageNumber,
+                paginatedResult.PageSize
+            );
 
-            await _cacheService.SetAsync(cacheKey, paginatedResult, TimeSpan.FromMinutes(5));
+            await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5));
 
-            return Result<PaginatedResult<TaskDto>>.Success(paginatedResult);
+            return Result<PaginatedResult<TaskDto>>.Success(result);
         }
 
         private async Task<Dictionary<string, long>> GetCacheVersionsAsync(GetPaginatedTasksQuery request)
