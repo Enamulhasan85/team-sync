@@ -35,10 +35,7 @@ namespace Template.Infrastructure.Configuration
             services.AddSingleton<IEventPublisher, RabbitMqPublisher>();
 
             // Register RabbitMQ consumer as a hosted service
-            // services.AddHostedService<RabbitMqConsumer>();
-
-            // SignalR for real-time notifications
-            // services.AddSignalR();
+            services.AddHostedService<RabbitMqConsumer>();
 
             return services;
         }
