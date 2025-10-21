@@ -14,17 +14,20 @@ namespace Template.Application.Features.ChatMessages.Commands
         private readonly IMapper _mapper;
         private readonly ICacheService _cacheService;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IChatNotificationService _chatNotificationService;
 
         public CreateChatMessageCommandHandler(
             IRepository<Domain.Entities.ChatMessage, ObjectId> repository,
             IMapper mapper,
             ICacheService cacheService,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            IChatNotificationService chatNotificationService)
         {
             _repository = repository;
             _mapper = mapper;
             _cacheService = cacheService;
             _currentUserService = currentUserService;
+            _chatNotificationService = chatNotificationService;
         }
 
         public async Task<Result<ChatMessageResponse>> Handle(CreateChatMessageCommand request, CancellationToken cancellationToken)
@@ -37,7 +40,11 @@ namespace Template.Application.Features.ChatMessages.Commands
             var createdMessage = await _repository.AddAsync(chatMessage, cancellationToken);
             var response = _mapper.Map<ChatMessageResponse>(createdMessage);
 
-            await InvalidateProjectCache(createdMessage.ProjectId.ToString());
+            var projectId = createdMessage.ProjectId.ToString();
+            await InvalidateProjectCache(projectId);
+
+            // Send real-time notification to project members
+            await _chatNotificationService.SendMessageToProjectAsync(projectId, response);
 
             return Result<ChatMessageResponse>.Success(response);
         }
@@ -54,17 +61,20 @@ namespace Template.Application.Features.ChatMessages.Commands
         private readonly IMapper _mapper;
         private readonly ICacheService _cacheService;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IChatNotificationService _chatNotificationService;
 
         public UpdateChatMessageCommandHandler(
             IRepository<Domain.Entities.ChatMessage, ObjectId> repository,
             IMapper mapper,
             ICacheService cacheService,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            IChatNotificationService chatNotificationService)
         {
             _repository = repository;
             _mapper = mapper;
             _cacheService = cacheService;
             _currentUserService = currentUserService;
+            _chatNotificationService = chatNotificationService;
         }
 
         public async Task<Result<ChatMessageResponse>> Handle(UpdateChatMessageCommand request, CancellationToken cancellationToken)
@@ -83,7 +93,11 @@ namespace Template.Application.Features.ChatMessages.Commands
             await _repository.UpdateAsync(existingMessage, cancellationToken);
             var response = _mapper.Map<ChatMessageResponse>(existingMessage);
 
-            await InvalidateProjectCache(existingMessage.ProjectId.ToString());
+            var projectId = existingMessage.ProjectId.ToString();
+            await InvalidateProjectCache(projectId);
+
+            // Send real-time notification to project members
+            await _chatNotificationService.SendUpdatedMessageToProjectAsync(projectId, response);
 
             return Result<ChatMessageResponse>.Success(response);
         }
@@ -99,15 +113,18 @@ namespace Template.Application.Features.ChatMessages.Commands
         private readonly IRepository<Domain.Entities.ChatMessage, ObjectId> _repository;
         private readonly ICurrentUserService _currentUserService;
         private readonly ICacheService _cacheService;
+        private readonly IChatNotificationService _chatNotificationService;
 
         public DeleteChatMessageCommandHandler(
             IRepository<Domain.Entities.ChatMessage, ObjectId> repository,
             ICurrentUserService currentUserService,
-            ICacheService cacheService)
+            ICacheService cacheService,
+            IChatNotificationService chatNotificationService)
         {
             _repository = repository;
             _currentUserService = currentUserService;
             _cacheService = cacheService;
+            _chatNotificationService = chatNotificationService;
         }
 
         public async Task<Result<bool>> Handle(DeleteChatMessageCommand request, CancellationToken cancellationToken)
@@ -123,10 +140,14 @@ namespace Template.Application.Features.ChatMessages.Commands
                 return Result<bool>.Failure("You can only delete your own messages");
 
             var projectId = existingMessage.ProjectId.ToString();
+            var deletedMessageId = messageId.ToString();
 
             await _repository.DeleteAsync(messageId, cancellationToken);
 
             await InvalidateProjectCache(projectId);
+
+            // Send real-time notification to project members
+            await _chatNotificationService.SendDeletedMessageToProjectAsync(projectId, deletedMessageId);
 
             return Result<bool>.Success(true);
         }
