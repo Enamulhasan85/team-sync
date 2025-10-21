@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Security.Claims;
 using System.Text;
 using Asp.Versioning;
 using FluentValidation;
@@ -77,7 +78,10 @@ namespace Template.API.Extensions
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(key),
                     ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero // Remove default 5-minute tolerance
+                    ClockSkew = TimeSpan.Zero, // Remove default 5-minute tolerance
+
+                    NameClaimType = ClaimTypes.NameIdentifier,
+                    RoleClaimType = ClaimTypes.Role
                 };
 
                 options.Events = new JwtBearerEvents

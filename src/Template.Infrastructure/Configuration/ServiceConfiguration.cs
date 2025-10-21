@@ -20,6 +20,7 @@ namespace Template.Infrastructure.Configuration
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<IChatNotificationService, SignalRChatNotificationService>();
             services.AddSingleton<ICacheService, RedisCacheService>();
 
             services.AddSingleton<IMongoDbContext>(sp =>

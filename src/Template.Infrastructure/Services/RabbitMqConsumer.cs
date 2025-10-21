@@ -167,13 +167,11 @@ public class RabbitMqConsumer : BackgroundService
                     var createdEvent = JsonSerializer.Deserialize<TaskCreatedEvent>(messageJson);
                     if (createdEvent != null)
                     {
-                        await ProcessTaskEventAsync(createdEvent, "Task Created",
-                            $"A new task '{createdEvent.Title}' has been created.",
+                        var notificationTitle = "Task Created";
+                        var notificationMessage = $"A new task '{createdEvent.Title}' has been created.";
+                        await ProcessTaskEventAsync(createdEvent, notificationTitle, notificationMessage,
                             hubContext, projectRepository, notificationRepository,
                             notificationService, userManager, cancellationToken);
-
-                        await hubContext.Clients.Group($"project_{createdEvent.ProjectId}")
-                            .SendAsync("TaskCreated", createdEvent, cancellationToken);
                     }
                     break;
 
@@ -189,9 +187,6 @@ public class RabbitMqConsumer : BackgroundService
                             $"Task '{updatedEvent.Title}' has been updated{changedFieldsStr}.",
                             hubContext, projectRepository, notificationRepository,
                             notificationService, userManager, cancellationToken);
-
-                        await hubContext.Clients.Group($"project_{updatedEvent.ProjectId}")
-                            .SendAsync("TaskUpdated", updatedEvent, cancellationToken);
                     }
                     break;
 
@@ -203,9 +198,6 @@ public class RabbitMqConsumer : BackgroundService
                             $"Task '{deletedEvent.Title}' has been deleted.",
                             hubContext, projectRepository, notificationRepository,
                             notificationService, userManager, cancellationToken);
-
-                        await hubContext.Clients.Group($"project_{deletedEvent.ProjectId}")
-                            .SendAsync("TaskDeleted", deletedEvent, cancellationToken);
                     }
                     break;
 
@@ -250,6 +242,20 @@ public class RabbitMqConsumer : BackgroundService
             _logger.LogInformation("Processing task event for project {ProjectId} with {MemberCount} members",
                 taskEvent.ProjectId, project.MemberIds.Count);
 
+            // send real-time notification via SignalR
+            await hubContext.Clients.Group($"project_{taskEvent.ProjectId}")
+                .SendAsync(
+                    "ReceiveTaskNotification",
+                    new
+                    {
+                        taskEvent.TaskId,
+                        taskEvent.ProjectId,
+                        taskEvent.Title,
+                        notificationTitle,
+                        notificationMessage
+                    }
+                );
+
             foreach (var memberId in project.MemberIds)
             {
                 try
@@ -275,17 +281,6 @@ public class RabbitMqConsumer : BackgroundService
                     await notificationService.SendEmailAsync(user.Email!, notificationTitle, notificationMessage, cancellationToken);
                     _logger.LogInformation("Created email log for user {UserId}", memberId);
 
-                    // Send real-time SignalR notification to the specific user
-                    await hubContext.Clients.User(memberId.ToString())
-                        .SendAsync("ReceiveNotification", new
-                        {
-                            notification.Id,
-                            notification.Title,
-                            notification.Message,
-                            notification.CreatedAt,
-                            TaskId = taskEvent.TaskId,
-                            ProjectId = taskEvent.ProjectId
-                        }, cancellationToken);
                 }
                 catch (Exception ex)
                 {
