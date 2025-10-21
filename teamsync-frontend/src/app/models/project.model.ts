@@ -13,11 +13,10 @@ export interface Project {
 }
 
 export enum ProjectStatus {
-  NotStarted = 'NotStarted',
-  InProgress = 'InProgress',
-  Completed = 'Completed',
-  OnHold = 'OnHold',
-  Cancelled = 'Cancelled'
+  Planned = 1,
+  Active = 2,
+  Completed = 3,
+  Cancelled = 4
 }
 
 export interface CreateProjectRequest {

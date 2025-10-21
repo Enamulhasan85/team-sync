@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -13,12 +13,15 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+import { ToastrService } from 'ngx-toastr';
+import { Subject, takeUntil } from 'rxjs';
 
 import { ProjectService } from '../../services/project.service';
 import { TaskService } from '../../services/task.service';
 import { AuthService } from '../../services/auth.service';
+import { SignalRService, TaskUpdatedEvent, ChatMessageReceivedEvent } from '../../services/signalr.service';
 import { Project, ProjectStatus } from '../../models/project.model';
-import { Task, TaskStatus, TaskPriority } from '../../models/task.model';
+import { Task, TaskStatus } from '../../models/task.model';
 
 @Component({
   selector: 'app-dashboard',
@@ -40,13 +43,16 @@ import { Task, TaskStatus, TaskPriority } from '../../models/task.model';
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   private readonly projectService = inject(ProjectService);
   private readonly taskService = inject(TaskService);
   private readonly authService = inject(AuthService);
+  private readonly signalRService = inject(SignalRService);
+  private readonly toastr = inject(ToastrService);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
   private readonly fb = inject(FormBuilder);
+  private readonly destroy$ = new Subject<void>();
 
   projects: Project[] = [];
   tasks: Task[] = [];
@@ -55,17 +61,140 @@ export class DashboardComponent implements OnInit {
   errorMessage = '';
 
   taskForm!: FormGroup;
+  projectForm!: FormGroup;
   isEditMode = false;
   selectedTaskId: string | null = null;
   showTaskDialog = false;
+  showProjectDialog = false;
 
-  taskStatuses = Object.values(TaskStatus);
-  taskPriorities = Object.values(TaskPriority);
+  taskStatuses = Object.values(TaskStatus).filter((v) => typeof v === 'number') as TaskStatus[];
+  projectStatuses = Object.values(ProjectStatus).filter(
+    (v) => typeof v === 'number'
+  ) as ProjectStatus[];
 
   ngOnInit(): void {
     this.initTaskForm();
+    this.initProjectForm();
     this.loadProjects();
     this.loadTasks();
+    this.initializeSignalR();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.signalRService.stopConnection().catch(err => 
+      console.error('Error stopping SignalR connection:', err)
+    );
+  }
+
+  /**
+   * Initialize SignalR connection and subscribe to events
+   */
+  private async initializeSignalR(): Promise<void> {
+    try {
+      // Start SignalR connection
+      await this.signalRService.startConnection();
+      this.toastr.success('Real-time updates connected', 'Connected');
+
+      // Subscribe to task updates
+      this.signalRService.taskUpdated$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (event: TaskUpdatedEvent) => {
+            this.handleTaskUpdated(event);
+          },
+          error: (error) => {
+            console.error('Error in taskUpdated subscription:', error);
+          }
+        });
+
+      // Subscribe to chat messages
+      this.signalRService.chatMessageReceived$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (event: ChatMessageReceivedEvent) => {
+            this.handleChatMessageReceived(event);
+          },
+          error: (error) => {
+            console.error('Error in chatMessageReceived subscription:', error);
+          }
+        });
+
+      // Subscribe to connection state changes
+      this.signalRService.connectionState$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (state) => {
+            console.log('SignalR connection state:', state);
+          }
+        });
+    } catch (error) {
+      console.error('Failed to initialize SignalR:', error);
+      this.toastr.warning('Real-time updates unavailable', 'Connection Issue');
+    }
+  }
+
+  /**
+   * Handle task updated event from SignalR
+   */
+  private handleTaskUpdated(event: TaskUpdatedEvent): void {
+    console.log('Handling task update:', event);
+    
+    // Find and update the task in the local array
+    const taskIndex = this.tasks.findIndex(t => t.id === event.taskId);
+    if (taskIndex !== -1) {
+      // Update existing task
+      const updatedTask = {
+        ...this.tasks[taskIndex],
+        title: event.title,
+        description: event.description,
+        status: event.status,
+        assignedToId: event.assigneeId,
+        dueDate: event.dueDate,
+      };
+      this.tasks[taskIndex] = updatedTask;
+      
+      this.toastr.info(
+        `Task "${event.title}" was updated`,
+        'Task Updated',
+        { timeOut: 5000 }
+      );
+    } else {
+      // Task not in current list, reload to get it
+      this.loadTasks();
+      this.toastr.info(
+        `New task detected`,
+        'Task Created',
+        { timeOut: 5000 }
+      );
+    }
+  }
+
+  /**
+   * Handle chat message received event from SignalR
+   */
+  private handleChatMessageReceived(event: ChatMessageReceivedEvent): void {
+    console.log('Handling chat message:', event);
+    
+    // Show notification
+    this.toastr.info(
+      event.content,
+      `Message from ${event.senderName}`,
+      { 
+        timeOut: 5000,
+        enableHtml: true,
+        closeButton: true
+      }
+    );
+
+    // TODO: Update chat messages array when chat feature is implemented
+    // For now, just log it
+    console.log('Chat message received:', {
+      sender: event.senderName,
+      content: event.content,
+      timestamp: event.timestamp
+    });
   }
 
   private initTaskForm(): void {
@@ -73,10 +202,19 @@ export class DashboardComponent implements OnInit {
       title: ['', [Validators.required, Validators.minLength(3)]],
       description: [''],
       status: [TaskStatus.Todo, Validators.required],
-      priority: [TaskPriority.Medium, Validators.required],
       projectId: ['', Validators.required],
+      assignedToId: [''],
       dueDate: [''],
-      estimatedHours: [null],
+    });
+  }
+
+  private initProjectForm(): void {
+    this.projectForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(3)]],
+      description: [''],
+      status: [ProjectStatus.Planned, Validators.required],
+      startDate: [''],
+      endDate: [''],
     });
   }
 
@@ -122,19 +260,53 @@ export class DashboardComponent implements OnInit {
         title: task.title,
         description: task.description,
         status: task.status,
-        priority: task.priority,
         projectId: task.projectId,
+        assignedToId: task.assignedToId,
         dueDate: task.dueDate ? new Date(task.dueDate) : null,
-        estimatedHours: task.estimatedHours,
       });
     } else {
       this.taskForm.reset({
         status: TaskStatus.Todo,
-        priority: TaskPriority.Medium,
       });
     }
 
     this.showTaskDialog = true;
+  }
+
+  openProjectDialog(): void {
+    this.projectForm.reset({
+      status: ProjectStatus.Planned,
+    });
+    this.showProjectDialog = true;
+  }
+
+  closeProjectDialog(): void {
+    this.showProjectDialog = false;
+    this.projectForm.reset();
+  }
+
+  onSubmitProject(): void {
+    if (this.projectForm.invalid) {
+      this.markFormGroupTouched(this.projectForm);
+      return;
+    }
+
+    const projectData = this.projectForm.value;
+    this.createProject(projectData);
+  }
+
+  private createProject(projectData: any): void {
+    this.projectService.createProject(projectData).subscribe({
+      next: (project) => {
+        console.log('Project created:', project);
+        this.loadProjects();
+        this.closeProjectDialog();
+      },
+      error: (error) => {
+        console.error('Error creating project:', error);
+        this.errorMessage = 'Failed to create project';
+      },
+    });
   }
 
   closeTaskDialog(): void {
@@ -227,32 +399,40 @@ export class DashboardComponent implements OnInit {
     const colors: Record<TaskStatus, string> = {
       [TaskStatus.Todo]: 'default',
       [TaskStatus.InProgress]: 'primary',
-      [TaskStatus.InReview]: 'accent',
       [TaskStatus.Done]: 'success',
       [TaskStatus.Blocked]: 'warn',
     };
     return colors[status] || 'default';
   }
 
-  getPriorityColor(priority: TaskPriority): string {
-    const colors: Record<TaskPriority, string> = {
-      [TaskPriority.Low]: 'default',
-      [TaskPriority.Medium]: 'primary',
-      [TaskPriority.High]: 'accent',
-      [TaskPriority.Critical]: 'warn',
-    };
-    return colors[priority] || 'default';
-  }
-
   getProjectStatusColor(status: ProjectStatus): string {
     const colors: Record<ProjectStatus, string> = {
-      [ProjectStatus.NotStarted]: 'default',
-      [ProjectStatus.InProgress]: 'primary',
+      [ProjectStatus.Planned]: 'default',
+      [ProjectStatus.Active]: 'primary',
       [ProjectStatus.Completed]: 'success',
-      [ProjectStatus.OnHold]: 'accent',
       [ProjectStatus.Cancelled]: 'warn',
     };
     return colors[status] || 'default';
+  }
+
+  getTaskStatusName(status: TaskStatus): string {
+    const names: Record<TaskStatus, string> = {
+      [TaskStatus.Todo]: 'To Do',
+      [TaskStatus.InProgress]: 'In Progress',
+      [TaskStatus.Done]: 'Done',
+      [TaskStatus.Blocked]: 'Blocked',
+    };
+    return names[status] || 'Unknown';
+  }
+
+  getProjectStatusName(status: ProjectStatus): string {
+    const names: Record<ProjectStatus, string> = {
+      [ProjectStatus.Planned]: 'Planned',
+      [ProjectStatus.Active]: 'Active',
+      [ProjectStatus.Completed]: 'Completed',
+      [ProjectStatus.Cancelled]: 'Cancelled',
+    };
+    return names[status] || 'Unknown';
   }
 
   private markFormGroupTouched(formGroup: FormGroup): void {
@@ -268,5 +448,9 @@ export class DashboardComponent implements OnInit {
 
   get projectId() {
     return this.taskForm.get('projectId');
+  }
+
+  get projectName() {
+    return this.projectForm.get('name');
   }
 }

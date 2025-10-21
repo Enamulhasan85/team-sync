@@ -344,40 +344,89 @@ team-sync/
 
 For complete API documentation, visit the Swagger UI after starting the application.
 
+## 🎨 Frontend (Angular)
+
+### Implemented Features
+
+- ✅ **Dashboard**: Lists projects, displays project details, and manages tasks
+- ✅ **Task Management**: Task creation/edit UI with status filters and real-time updates
+- ✅ **Live Updates**: SignalR hub connection for task notifications
+- ✅ **Toast Notifications**: Real-time visual feedback for task changes via ngx-toastr
+- ✅ **Authentication**: JWT stored in localStorage, automatically attached to API calls
+- ✅ **Project Creation**: Modal-based project creation with team member assignment
+- ✅ **Real-time Sync**: Automatic UI updates when tasks are created/updated/deleted
+
+### Frontend Setup
+
+```powershell
+cd teamsync-frontend
+npm install
+ng serve
+```
+
+Access the frontend at: http://localhost:4200
+
 ## 🔔 SignalR Real-time Integration
 
+### ⚠️ IMPORTANT: CORS Configuration
+
+**Before running the frontend**, ensure CORS is properly configured in the backend:
+
+In `src/Template.API/appsettings.Development.json`:
+
+```json
+{
+  "AllowedOrigins": ["http://localhost:4200"]
+}
+```
+
+**Common SignalR Connection Error:**
+
+If you see this error:
+
+```
+POST http://localhost:4030/hubs/notifications/negotiate?negotiateVersion=1 net::ERR_FAILED
+Error: Failed to complete negotiation with the server: TypeError: Failed to fetch
+```
+
+**Solution:**
+
+1. ✅ Verify backend is running on `http://localhost:4030`
+2. ✅ Check `AllowedOrigins` includes `http://localhost:4200` in `appsettings.Development.json`
+3. ✅ Ensure you're logged in and JWT token exists in localStorage
+4. ✅ Restart the backend after changing CORS settings
+
 ### Connect to SignalR Hub
+
+The frontend automatically connects to SignalR on login:
 
 ```typescript
 import * as signalR from "@microsoft/signalr";
 
 const connection = new signalR.HubConnectionBuilder()
-  .withUrl("https://localhost:4030/hubs/notifications", {
-    accessTokenFactory: () => yourJwtToken,
+  .withUrl("http://localhost:4030/hubs/notifications", {
+    accessTokenFactory: () => localStorage.getItem("access_token"),
   })
-  .withAutomaticReconnect()
+  .withAutomaticReconnect([0, 2000, 10000, 30000, 60000])
   .build();
 
 await connection.start();
 
-// Join project-specific group
-await connection.invoke("JoinProjectGroup", projectId);
-
-// Listen for events
-connection.on("TaskCreated", (event) => {
-  console.log("New task:", event);
+// Listen for real-time events
+connection.on("ReceiveTaskNotification", (event) => {
+  console.log("Task event:", event);
+  this.toastr.info(event.title, "Task Updated");
 });
 
-connection.on("TaskUpdated", (event) => {
-  console.log("Task updated:", event);
-});
-
-connection.on("TaskDeleted", (event) => {
-  console.log("Task deleted:", event);
+connection.on("ReceiveMessage", (event) => {
+  console.log("New message:", event);
+  this.toastr.success(event.content, event.senderName);
 });
 ```
 
-You can test the SignalR hub using the web-based SignalR client:
+**Testing SignalR:**
+
+You can also test the SignalR hub using the web-based SignalR client:
 
 **SignalR Web Client**: https://gourav-d.github.io/SignalR-Web-Client/dist/
 
@@ -388,10 +437,39 @@ You can test the SignalR hub using the web-based SignalR client:
 ## 📚 Additional Documentation
 
 - **[Redis, RabbitMQ & SignalR Integration Strategy](docs/INTEGRATION-STRATEGY.md)** - Detailed explanation of caching, messaging, and real-time architecture
-- [MediatR & CQRS Setup Guide](docs/MEDIATR-CQRS-GUIDE.md)
-- [RabbitMQ & SignalR Real-time Setup](docs/RABBITMQ-SIGNALR-SETUP.md)
-- [Background Consumer Implementation](docs/BACKGROUND-CONSUMER-IMPLEMENTATION.md)
-- [Unit Testing Checklist](docs/UNIT-TEST-CHECKLIST.md)
+
+## ⚠️ Known Limitations & Missing Features
+
+### Frontend Missing Functionality
+
+**Chat Message UI (Not Implemented):**
+
+- ❌ No chat UI component for sending/viewing messages
+- ❌ No chat service for API calls
+- ✅ Backend API fully implemented (`POST /api/v1/chatmessages`)
+- ✅ SignalR real-time chat notifications working
+
+**Current State:**
+
+- Chat messages trigger toast notifications when received via SignalR
+- Dashboard component has placeholder for chat feature (see TODO comment)
+- Backend supports create, update, delete, and pagination of chat messages
+
+### Common Issues
+
+**SignalR Connection Error:**
+
+```
+POST http://localhost:4030/hubs/notifications/negotiate net::ERR_FAILED
+```
+
+**Fix:** Ensure `AllowedOrigins: ["http://localhost:4200"]` in `appsettings.Development.json`, then restart backend.
+
+**Tasks Not Updating in Real-time:**
+
+- Verify RabbitMQ is running on port 5672
+- Check backend console for RabbitMQ consumer logs
+- Ensure JWT token is valid (logout/login if expired)
 
 ## 📄 License
 
