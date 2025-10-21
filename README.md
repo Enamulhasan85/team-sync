@@ -235,11 +235,21 @@ dotnet watch run
 
 ### 9. Access the Application
 
-- **API Base URL**: https://localhost:7123
-- **Swagger UI**: https://localhost:7123/swagger
-- **SignalR Hub**: wss://localhost:7123/hubs/notifications
+- **API Base URL**: https://localhost:4030
+- **Swagger UI**: https://localhost:4030/swagger
+- **SignalR Hub**: http://localhost:4030/hubs/notifications
 
-### 10. Default Credentials
+### 10. Testing SignalR Hub
+
+You can test the SignalR hub using the web-based SignalR client:
+
+**SignalR Web Client**: https://gourav-d.github.io/SignalR-Web-Client/dist/
+
+1. Enter the hub URL: `http://localhost:4030/hubs/notifications`
+2. Add your JWT token in the connection options
+3. Connect and test real-time events
+
+### 11. Default Credentials
 
 The application seeds a default admin user:
 
@@ -342,7 +352,7 @@ For complete API documentation, visit the Swagger UI after starting the applicat
 import * as signalR from "@microsoft/signalr";
 
 const connection = new signalR.HubConnectionBuilder()
-  .withUrl("https://localhost:7123/hubs/notifications", {
+  .withUrl("https://localhost:4030/hubs/notifications", {
     accessTokenFactory: () => yourJwtToken,
   })
   .withAutomaticReconnect()
@@ -366,6 +376,14 @@ connection.on("TaskDeleted", (event) => {
   console.log("Task deleted:", event);
 });
 ```
+
+You can test the SignalR hub using the web-based SignalR client:
+
+**SignalR Web Client**: https://gourav-d.github.io/SignalR-Web-Client/dist/
+
+1. Enter the hub URL: `http://localhost:4030/hubs/notifications`
+2. Add your JWT token in the connection options
+3. Connect and test real-time events
 
 ## 📚 Additional Documentation
 
