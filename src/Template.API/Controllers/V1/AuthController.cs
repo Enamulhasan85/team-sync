@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Template.API.Controllers.Common;
 using Template.Application.Features.Authentication.Commands.Register;
 using Template.Application.Features.Authentication.Queries.Login;
@@ -20,6 +21,7 @@ namespace Template.API.Controllers.V1
         }
 
         [HttpPost("register")]
+        [EnableRateLimiting("Authentication")]
         public async Task<IActionResult> Register(RegisterCommand command)
         {
             var result = await _mediator.Send(command);
@@ -27,6 +29,7 @@ namespace Template.API.Controllers.V1
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("Authentication")]
         public async Task<IActionResult> Login(LoginQuery query)
         {
             var result = await _mediator.Send(query);

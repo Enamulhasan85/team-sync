@@ -19,7 +19,11 @@ import { Subject, takeUntil } from 'rxjs';
 import { ProjectService } from '../../services/project.service';
 import { TaskService } from '../../services/task.service';
 import { AuthService } from '../../services/auth.service';
-import { SignalRService, TaskUpdatedEvent, ChatMessageReceivedEvent } from '../../services/signalr.service';
+import {
+  SignalRService,
+  TaskUpdatedEvent,
+  ChatMessageReceivedEvent,
+} from '../../services/signalr.service';
 import { Project, ProjectStatus } from '../../models/project.model';
 import { Task, TaskStatus } from '../../models/task.model';
 
@@ -83,9 +87,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    this.signalRService.stopConnection().catch(err => 
-      console.error('Error stopping SignalR connection:', err)
-    );
+    this.signalRService
+      .stopConnection()
+      .catch((err) => console.error('Error stopping SignalR connection:', err));
   }
 
   /**
@@ -98,37 +102,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.toastr.success('Real-time updates connected', 'Connected');
 
       // Subscribe to task updates
-      this.signalRService.taskUpdated$
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (event: TaskUpdatedEvent) => {
-            this.handleTaskUpdated(event);
-          },
-          error: (error) => {
-            console.error('Error in taskUpdated subscription:', error);
-          }
-        });
+      this.signalRService.taskUpdated$.pipe(takeUntil(this.destroy$)).subscribe({
+        next: (event: TaskUpdatedEvent) => {
+          this.handleTaskUpdated(event);
+        },
+        error: (error) => {
+          console.error('Error in taskUpdated subscription:', error);
+        },
+      });
 
       // Subscribe to chat messages
-      this.signalRService.chatMessageReceived$
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (event: ChatMessageReceivedEvent) => {
-            this.handleChatMessageReceived(event);
-          },
-          error: (error) => {
-            console.error('Error in chatMessageReceived subscription:', error);
-          }
-        });
+      this.signalRService.chatMessageReceived$.pipe(takeUntil(this.destroy$)).subscribe({
+        next: (event: ChatMessageReceivedEvent) => {
+          this.handleChatMessageReceived(event);
+        },
+        error: (error) => {
+          console.error('Error in chatMessageReceived subscription:', error);
+        },
+      });
 
       // Subscribe to connection state changes
-      this.signalRService.connectionState$
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (state) => {
-            console.log('SignalR connection state:', state);
-          }
-        });
+      this.signalRService.connectionState$.pipe(takeUntil(this.destroy$)).subscribe({
+        next: (state) => {
+          console.log('SignalR connection state:', state);
+        },
+      });
     } catch (error) {
       console.error('Failed to initialize SignalR:', error);
       this.toastr.warning('Real-time updates unavailable', 'Connection Issue');
@@ -140,9 +138,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
    */
   private handleTaskUpdated(event: TaskUpdatedEvent): void {
     console.log('Handling task update:', event);
-    
+
     // Find and update the task in the local array
-    const taskIndex = this.tasks.findIndex(t => t.id === event.taskId);
+    const taskIndex = this.tasks.findIndex((t) => t.id === event.taskId);
     if (taskIndex !== -1) {
       // Update existing task
       const updatedTask = {
@@ -154,20 +152,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
         dueDate: event.dueDate,
       };
       this.tasks[taskIndex] = updatedTask;
-      
-      this.toastr.info(
-        `Task "${event.title}" was updated`,
-        'Task Updated',
-        { timeOut: 5000 }
-      );
+
+      this.toastr.info(`Task "${event.title}" was updated`, 'Task Updated', { timeOut: 5000 });
     } else {
       // Task not in current list, reload to get it
       this.loadTasks();
-      this.toastr.info(
-        `New task detected`,
-        'Task Created',
-        { timeOut: 5000 }
-      );
+      this.toastr.info(`New task detected`, 'Task Created', { timeOut: 5000 });
     }
   }
 
@@ -176,24 +166,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
    */
   private handleChatMessageReceived(event: ChatMessageReceivedEvent): void {
     console.log('Handling chat message:', event);
-    
+
     // Show notification
-    this.toastr.info(
-      event.content,
-      `Message from ${event.senderName}`,
-      { 
-        timeOut: 5000,
-        enableHtml: true,
-        closeButton: true
-      }
-    );
+    this.toastr.info(event.content, `Message from ${event.senderName}`, {
+      timeOut: 5000,
+      enableHtml: true,
+      closeButton: true,
+    });
 
     // TODO: Update chat messages array when chat feature is implemented
     // For now, just log it
     console.log('Chat message received:', {
       sender: event.senderName,
       content: event.content,
-      timestamp: event.timestamp
+      timestamp: event.timestamp,
     });
   }
 

@@ -19,12 +19,12 @@ namespace Template.Infrastructure.Services
             _logger = logger;
         }
 
-        public async Task SendMessageToProjectAsync(string projectId, ChatMessageResponse message)
+        public async Task SendMessageToProjectAsync(string projectId, string title, ChatMessageResponse message)
         {
             try
             {
                 var groupName = $"project_{projectId}";
-                await _hubContext.Clients.Group(groupName).SendAsync("ReceiveMessage", message);
+                await _hubContext.Clients.Group(groupName).SendAsync(title, message);
 
                 _logger.LogInformation(
                     "Chat message {MessageId} sent to project group {GroupName}",

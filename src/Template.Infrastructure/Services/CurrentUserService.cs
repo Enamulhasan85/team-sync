@@ -4,9 +4,6 @@ using Template.Application.Common.Interfaces;
 
 namespace Template.Infrastructure.Services
 {
-    /// <summary>
-    /// Service for accessing current user information from HTTP context
-    /// </summary>
     public class CurrentUserService : ICurrentUserService
     {
         private readonly IHttpContextAccessor _httpContextAccessor;

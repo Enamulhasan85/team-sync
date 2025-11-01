@@ -41,17 +41,12 @@ namespace Template.Application.Features.ChatMessages.Commands
             var response = _mapper.Map<ChatMessageResponse>(createdMessage);
 
             var projectId = createdMessage.ProjectId.ToString();
-            await InvalidateProjectCache(projectId);
+            await _cacheService.IncrementAsync($"chatmessages:v:project:{projectId}", 1);
 
             // Send real-time notification to project members
-            await _chatNotificationService.SendMessageToProjectAsync(projectId, response);
+            await _chatNotificationService.SendMessageToProjectAsync(projectId, "NewMessage", response);
 
             return Result<ChatMessageResponse>.Success(response);
-        }
-
-        private async Task InvalidateProjectCache(string projectId)
-        {
-            await _cacheService.IncrementAsync($"chatmessages:v:project:{projectId}", 1);
         }
     }
 
@@ -94,17 +89,12 @@ namespace Template.Application.Features.ChatMessages.Commands
             var response = _mapper.Map<ChatMessageResponse>(existingMessage);
 
             var projectId = existingMessage.ProjectId.ToString();
-            await InvalidateProjectCache(projectId);
+            await _cacheService.IncrementAsync($"chatmessages:v:project:{projectId}", 1);
 
             // Send real-time notification to project members
-            await _chatNotificationService.SendUpdatedMessageToProjectAsync(projectId, response);
+            await _chatNotificationService.SendMessageToProjectAsync(projectId, "UpdatedMessage", response);
 
             return Result<ChatMessageResponse>.Success(response);
-        }
-
-        private async Task InvalidateProjectCache(string projectId)
-        {
-            await _cacheService.IncrementAsync($"chatmessages:v:project:{projectId}", 1);
         }
     }
 
@@ -114,17 +104,20 @@ namespace Template.Application.Features.ChatMessages.Commands
         private readonly ICurrentUserService _currentUserService;
         private readonly ICacheService _cacheService;
         private readonly IChatNotificationService _chatNotificationService;
+        private readonly IMapper _mapper;
 
         public DeleteChatMessageCommandHandler(
             IRepository<Domain.Entities.ChatMessage, ObjectId> repository,
             ICurrentUserService currentUserService,
             ICacheService cacheService,
-            IChatNotificationService chatNotificationService)
+            IChatNotificationService chatNotificationService,
+            IMapper mapper)
         {
             _repository = repository;
             _currentUserService = currentUserService;
             _cacheService = cacheService;
             _chatNotificationService = chatNotificationService;
+            _mapper = mapper;
         }
 
         public async Task<Result<bool>> Handle(DeleteChatMessageCommand request, CancellationToken cancellationToken)
@@ -140,21 +133,16 @@ namespace Template.Application.Features.ChatMessages.Commands
                 return Result<bool>.Failure("You can only delete your own messages");
 
             var projectId = existingMessage.ProjectId.ToString();
-            var deletedMessageId = messageId.ToString();
 
             await _repository.DeleteAsync(messageId, cancellationToken);
 
-            await InvalidateProjectCache(projectId);
+            var response = _mapper.Map<ChatMessageResponse>(existingMessage);
+            await _cacheService.IncrementAsync($"chatmessages:v:project:{projectId}", 1);
 
             // Send real-time notification to project members
-            await _chatNotificationService.SendDeletedMessageToProjectAsync(projectId, deletedMessageId);
+            await _chatNotificationService.SendMessageToProjectAsync(projectId, "DeletedMessage", response);
 
             return Result<bool>.Success(true);
-        }
-
-        private async Task InvalidateProjectCache(string projectId)
-        {
-            await _cacheService.IncrementAsync($"chatmessages:v:project:{projectId}", 1);
         }
     }
 }

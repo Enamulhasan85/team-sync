@@ -4,7 +4,7 @@ namespace Template.Application.Common.Interfaces
 {
     public interface IChatNotificationService
     {
-        Task SendMessageToProjectAsync(string projectId, ChatMessageResponse message);
+        Task SendMessageToProjectAsync(string projectId, string title, ChatMessageResponse message);
         Task SendUpdatedMessageToProjectAsync(string projectId, ChatMessageResponse message);
         Task SendDeletedMessageToProjectAsync(string projectId, string messageId);
     }

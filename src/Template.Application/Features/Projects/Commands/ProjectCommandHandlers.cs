@@ -10,19 +10,23 @@ namespace Template.Application.Features.Projects.Commands
     public class CreateProjectCommandHandler : IRequestHandler<CreateProjectCommand, Result<ProjectResponse>>
     {
         private readonly IRepository<Project, ObjectId> _repository;
+        private readonly ICurrentUserService _currentUserService;
         private readonly IMapper _mapper;
 
         public CreateProjectCommandHandler(
             IRepository<Project, ObjectId> repository,
-            IMapper mapper)
+            IMapper mapper,
+            ICurrentUserService currentUserService)
         {
             _repository = repository;
+            _currentUserService = currentUserService;
             _mapper = mapper;
         }
 
         public async Task<Result<ProjectResponse>> Handle(CreateProjectCommand request, CancellationToken cancellationToken)
         {
             var project = _mapper.Map<Project>(request);
+            project.MemberIds.Add(ObjectId.Parse(_currentUserService.UserId));
 
             var createdProject = await _repository.AddAsync(project, cancellationToken);
 

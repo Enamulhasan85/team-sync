@@ -141,9 +141,9 @@ export class SignalRService {
       this.taskUpdatedSubject.next(taskUpdatedEvent);
     });
 
-    // Handle ReceiveMessage event (Chat messages) from backend
-    this.hubConnection.on('ReceiveMessage', (event: ChatMessageReceivedEvent) => {
-      console.log('ReceiveMessage event received:', event);
+    // Handle NewMessage event (Chat messages) from backend
+    this.hubConnection.on('NewMessage', (event: ChatMessageReceivedEvent) => {
+      console.log('NewMessage event received:', event);
       this.chatMessageReceivedSubject.next(event);
     });
 
