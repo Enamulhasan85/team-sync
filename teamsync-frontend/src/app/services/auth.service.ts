@@ -10,6 +10,13 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface LoginResponse {
   accessToken: string;
   refreshToken?: string;
@@ -18,6 +25,13 @@ export interface LoginResponse {
     email: string;
     name?: string;
   };
+}
+
+export interface RegisterResponse {
+  userId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
 }
 
 export interface ApiResponse<T> {
@@ -46,6 +60,12 @@ export class AuthService {
     this.isBrowser = isPlatformBrowser(this.platformId);
     this.isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasToken());
     this.isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+  }
+
+  register(credentials: RegisterRequest): Observable<RegisterResponse> {
+    return this.http.post<ApiResponse<RegisterResponse>>(`${this.apiUrl}/register`, credentials).pipe(
+      map((response) => response.data!)
+    );
   }
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
@@ -87,7 +107,62 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return this.hasToken();
+    if (!this.hasToken()) {
+      return false;
+    }
+    
+    // Check if token is expired (basic check)
+    const token = this.getToken();
+    if (!token) {
+      return false;
+    }
+    
+    // Decode JWT token to check expiration
+    try {
+      const payload = this.decodeToken(token);
+      if (!payload || !payload.exp) {
+        return true; // If no exp claim, assume valid (server will validate)
+      }
+      
+      const expirationDate = new Date(payload.exp * 1000);
+      const isExpired = expirationDate <= new Date();
+      
+      if (isExpired) {
+        // Token expired, clear it
+        this.logout();
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      // If token decode fails, clear it
+      console.error('Token validation error:', error);
+      this.clearTokens();
+      return false;
+    }
+  }
+
+  private decodeToken(token: string): any {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        return null;
+      }
+      
+      const payload = parts[1];
+      const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      return JSON.parse(decoded);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  private clearTokens(): void {
+    if (this.isBrowser) {
+      localStorage.removeItem(this.TOKEN_KEY);
+      localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+    }
+    this.isAuthenticatedSubject.next(false);
   }
 
   private storeToken(token: string): void {

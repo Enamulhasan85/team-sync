@@ -28,6 +28,10 @@ namespace Template.Infrastructure.Configuration
                 {
                     // Password settings
                     options.Password.RequiredLength = 8;
+                    options.Password.RequireDigit = false;
+                    options.Password.RequireLowercase = false;
+                    options.Password.RequireNonAlphanumeric = false;
+                    options.Password.RequireUppercase = false;
 
                     // User settings
                     options.User.RequireUniqueEmail = true;

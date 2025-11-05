@@ -1,12 +1,12 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
 })
@@ -14,6 +14,7 @@ export class LoginComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   loginForm!: FormGroup;
   isLoading = false;
@@ -22,6 +23,13 @@ export class LoginComponent implements OnInit {
 
   ngOnInit(): void {
     this.initForm();
+    
+    // Check if user just registered
+    this.route.queryParams.subscribe((params) => {
+      if (params['registered'] === 'true' && params['email']) {
+        this.loginForm.patchValue({ email: params['email'] });
+      }
+    });
   }
 
   private initForm(): void {

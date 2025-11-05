@@ -1,0 +1,175 @@
+<div class="register-container">
+  <div class="register-card">
+    <div class="register-header">
+      <h1>Create Account</h1>
+      <p>Sign up to get started</p>
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+      <!-- Success Message -->
+      @if (successMessage) {
+      <div class="success-message">
+        {{ successMessage }}
+      </div>
+      }
+
+      <!-- Error Message -->
+      @if (errorMessage) {
+      <div class="error-message">
+        {{ errorMessage }}
+      </div>
+      }
+
+      <!-- First Name Field -->
+      <div class="form-group">
+        <label for="firstName">First Name</label>
+        <input
+          id="firstName"
+          type="text"
+          formControlName="firstName"
+          placeholder="Enter your first name"
+          [class.error]="firstName?.invalid && firstName?.touched"
+        />
+        @if (firstName?.invalid && firstName?.touched) {
+        <div class="field-error">
+          @if (firstName?.errors?.['required']) {
+          <span>First name is required</span>
+          } @if (firstName?.errors?.['minlength']) {
+          <span>First name must be at least 2 characters</span>
+          }
+        </div>
+        }
+      </div>
+
+      <!-- Last Name Field -->
+      <div class="form-group">
+        <label for="lastName">Last Name</label>
+        <input
+          id="lastName"
+          type="text"
+          formControlName="lastName"
+          placeholder="Enter your last name"
+          [class.error]="lastName?.invalid && lastName?.touched"
+        />
+        @if (lastName?.invalid && lastName?.touched) {
+        <div class="field-error">
+          @if (lastName?.errors?.['required']) {
+          <span>Last name is required</span>
+          } @if (lastName?.errors?.['minlength']) {
+          <span>Last name must be at least 2 characters</span>
+          }
+        </div>
+        }
+      </div>
+
+      <!-- Email Field -->
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          placeholder="Enter your email"
+          [class.error]="email?.invalid && email?.touched"
+        />
+        @if (email?.invalid && email?.touched) {
+        <div class="field-error">
+          @if (email?.errors?.['required']) {
+          <span>Email is required</span>
+          } @if (email?.errors?.['email']) {
+          <span>Please enter a valid email</span>
+          }
+        </div>
+        }
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="password-input-wrapper">
+          <input
+            id="password"
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="Enter your password"
+            [class.error]="password?.invalid && password?.touched"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="togglePasswordVisibility()"
+            tabindex="-1"
+          >
+            @if (showPassword) {
+            <i class="fas fa-eye-slash"></i>
+            } @else {
+            <i class="fas fa-eye"></i>
+            }
+          </button>
+        </div>
+        @if (password?.invalid && password?.touched) {
+        <div class="field-error">
+          @if (password?.errors?.['required']) {
+          <span>Password is required</span>
+          } @if (password?.errors?.['minlength']) {
+          <span>Password must be at least 6 characters</span>
+          }
+        </div>
+        }
+      </div>
+
+      <!-- Confirm Password Field -->
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <div class="password-input-wrapper">
+          <input
+            id="confirmPassword"
+            [type]="showConfirmPassword ? 'text' : 'password'"
+            formControlName="confirmPassword"
+            placeholder="Confirm your password"
+            [class.error]="(confirmPassword?.invalid && confirmPassword?.touched) || passwordMismatch"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="toggleConfirmPasswordVisibility()"
+            tabindex="-1"
+          >
+            @if (showConfirmPassword) {
+            <i class="fas fa-eye-slash"></i>
+            } @else {
+            <i class="fas fa-eye"></i>
+            }
+          </button>
+        </div>
+        @if (confirmPassword?.invalid && confirmPassword?.touched) {
+        <div class="field-error">
+          @if (confirmPassword?.errors?.['required']) {
+          <span>Please confirm your password</span>
+          }
+        </div>
+        }
+        @if (passwordMismatch) {
+        <div class="field-error">
+          <span>Passwords do not match</span>
+        </div>
+        }
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="submit-button" [disabled]="isLoading">
+        @if (isLoading) {
+        <span class="spinner"></span>
+        <span>Creating Account...</span>
+        } @else {
+        <span>Sign Up</span>
+        }
+      </button>
+
+      <!-- Sign In Link -->
+      <div class="signin-link">
+        Already have an account? <a routerLink="/login">Sign in</a>
+      </div>
+    </form>
+  </div>
+</div>
